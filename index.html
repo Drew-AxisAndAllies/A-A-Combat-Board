@@ -7,50 +7,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
-        }
-        .input-cell {
-            width: 100%;
-            text-align: center;
-            background-color: #21262d;
-            border: 1px solid #30363d;
-            color: #f0f6fc;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-        .header {
-            background-color: #161b22;
-            color: #f0f6fc;
-            font-weight: 700;
-            text-align: center;
-            padding: 12px 4px;
-        }
-        .damage-marker-label {
-            font-size: 0.6rem; 
-            font-weight: 600;
-            color: #dc2626;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
+        .input-cell { width: 100%; text-align: center; background-color: #21262d; border: 1px solid #30363d; color: #f0f6fc; padding: 4px 8px; border-radius: 6px; }
+        .header { background-color: #161b22; color: #f0f6fc; font-weight: 700; text-align: center; padding: 12px 4px; }
+        .damage-marker-label { font-size: 0.6rem; font-weight: 600; color: #dc2626; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-400">
-            A&A Automated Combat Resolver
-        </h1>
+        <h1 class="text-3xl font-bold text-center mb-6 text-yellow-400">A&A Live Combat Board</h1>
 
         <div class="overflow-x-auto rounded-xl border border-gray-700">
             <table class="w-full text-xs md:text-sm text-left">
                 <thead>
                     <tr class="header grid grid-cols-6">
                         <th class="col-span-1">UNIT</th>
-                        <th class="col-span-1">ATTACK (Hit ≤)</th>
-                        <th class="col-span-1">DEFEND (Hit ≤)</th>
-                        <th class="col-span-1">ATTACKER</th>
-                        <th class="col-span-1">DEFENDER</th>
+                        <th class="col-span-1">ATTACK</th>
+                        <th class="col-span-1">DEFEND</th>
+                        <th class="col-span-1 text-red-400">ATTACKER</th>
+                        <th class="col-span-1 text-green-400">DEFENDER</th>
                         <th class="col-span-1 text-yellow-500">REMAINING</th>
                     </tr>
                 </thead>
@@ -59,14 +35,13 @@
         </div>
 
         <div class="mt-8 flex flex-col space-y-3">
-            <button id="calculateButton" onclick="calculateCombat()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl transition focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+            <button id="calculateButton" onclick="calculateCombat()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl transition focus:ring-4 focus:ring-blue-500/50">
                 Run Automated Combat Round
             </button>
             <button onclick="clearBattle()" class="w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-xl transition">
                 Clear Battle
             </button>
         </div>
-
         <div id="messageBox" class="mt-6 p-4 rounded-xl text-center font-semibold hidden"></div>
     </div>
 
@@ -97,34 +72,33 @@
             const count = Math.min(parseInt(document.getElementById(`${side}-bb`)?.value) || 0, 12);
             const container = document.getElementById(`${side}-bb-markers`);
             if (!container) return;
-            const states = Array.from(container.querySelectorAll('input')).map(cb => cb.checked);
             container.innerHTML = '';
             for (let i = 0; i < count; i++) {
-                container.innerHTML += `<div class="flex items-center space-x-0.5"><input type="checkbox" id="${side}-bb-dmg-${i}" onchange="syncToFirebase()" class="accent-red-500" ${states[i] ? 'checked' : ''}><label class="damage-marker-label">Hit</label></div>`;
+                container.innerHTML += `<div class="flex items-center space-x-0.5"><input type="checkbox" id="${side}-bb-dmg-${i}" onchange="syncToFirebase()" class="accent-red-500"><label class="damage-marker-label">Hit</label></div>`;
             }
         }
 
         function renderRows() {
             document.getElementById('unitTableBody').innerHTML = UNIT_DATA.map(u => `
-                <tr class="grid grid-cols-6 border-t border-gray-700/50 hover:bg-gray-800/40 transition-colors">
-                    <td class="col-span-1 p-4 flex items-center"><strong>${u.name}</strong></td>
+                <tr class="grid grid-cols-6 border-t border-gray-700/50">
+                    <td class="col-span-1 p-4"><strong>${u.name}</strong></td>
                     <td id="A-ATK-${u.id}" class="col-span-1 p-4 text-center text-red-400 font-bold">${u.attack > 0 ? '≤' + u.attack : '-'}</td>
                     <td class="col-span-1 p-4 text-center text-green-400 font-bold">${u.defense > 0 ? '≤' + u.defense : '-'}</td>
                     <td class="col-span-1 p-2">
                         <input type="number" id="A-${u.id}" value="0" class="input-cell" oninput="updateAttackDisplay(); ${u.id==='bb'?'updateBBMarkers(\'A\')':''}">
-                        ${u.id==='sub' ? `<div class="flex justify-center mt-1"><input type="checkbox" id="A-sub-submerge" onchange="syncToFirebase()" class="accent-blue-500"><label class="damage-marker-label text-blue-400 ml-1">Submerge?</label></div>` : ''}
-                        ${u.id==='bb' ? `<div id="A-bb-markers" class="flex flex-wrap justify-center gap-1 mt-1"></div>` : ''}
+                        ${u.id==='sub' ? `<div class="flex justify-center mt-1"><input type="checkbox" id="A-sub-submerge" onchange="syncToFirebase()"><label class="damage-marker-label text-blue-400 ml-1">Sub?</label></div>` : ''}
+                        <div id="A-bb-markers" class="flex flex-wrap justify-center gap-1 mt-1"></div>
                         <div id="A-${u.id}-rolls" class="text-[10px] text-red-300 text-center mt-1"></div>
                     </td>
                     <td class="col-span-1 p-2">
                         <input type="number" id="D-${u.id}" value="0" class="input-cell" oninput="${u.id==='bb'?'updateBBMarkers(\'D\')':''}">
-                        ${u.id==='sub' ? `<div class="flex justify-center mt-1"><input type="checkbox" id="D-sub-submerge" onchange="syncToFirebase()" class="accent-green-500"><label class="damage-marker-label text-green-400 ml-1">Submerge?</label></div>` : ''}
-                        ${u.id==='bb' ? `<div id="D-bb-markers" class="flex flex-wrap justify-center gap-1 mt-1"></div>` : ''}
+                        ${u.id==='sub' ? `<div class="flex justify-center mt-1"><input type="checkbox" id="D-sub-submerge" onchange="syncToFirebase()"><label class="damage-marker-label text-green-400 ml-1">Sub?</label></div>` : ''}
+                        <div id="D-bb-markers" class="flex flex-wrap justify-center gap-1 mt-1"></div>
                         <div id="D-${u.id}-rolls" class="text-[10px] text-green-300 text-center mt-1"></div>
                     </td>
                     <td class="col-span-1 p-2 text-center flex flex-col justify-center border-l border-gray-800">
-                        <div id="A-${u.id}-rem" class="text-red-500 font-black text-lg"></div>
-                        <div id="D-${u.id}-rem" class="text-green-500 font-black text-lg"></div>
+                        <div id="A-${u.id}-rem" class="text-red-500 font-black"></div>
+                        <div id="D-${u.id}-rem" class="text-green-500 font-black"></div>
                     </td>
                 </tr>`).join('');
         }
@@ -171,25 +145,22 @@
             const aH = aL.some(u => u.id === 'dd' || u.id === 'sub');
             const dH = dL.some(u => u.id === 'dd' || u.id === 'sub');
 
-            // AA Gun Defense Only
             let aaH = 0; let aaRArr = [];
             const attPlanes = aL.filter(u => u.isAir);
             if (dL.some(u => u.id === 'aa') && attPlanes.length > 0) {
                 attPlanes.forEach(() => { 
                     const r = Math.floor(Math.random()*6)+1; aaRArr.push(r); if(r === 1) aaH++;
                 });
-                document.getElementById('D-aa-rolls').innerHTML = aaRArr.map(n=>`<span class="${n===1?'text-green-400':'text-red-400'}">${n}</span>`).join(',') + ' (AA)';
+                document.getElementById('D-aa-rolls').innerHTML = aaRArr.join(',') + ' (AA)';
             }
 
-            // Sub First Strikes
             const rollS = (l, side, h) => { 
                 let hits=0; let rArr=[];
                 const activeSubs = l.filter(u=>u.id==='sub'&&u.isSubmerged&&!h);
                 activeSubs.forEach(()=>{ 
                     const r = Math.floor(Math.random()*6)+1; rArr.push(r); if(r<=2) hits++; 
                 });
-                const el = document.getElementById(`${side}-sub-rolls`);
-                if(el && activeSubs.length > 0) el.innerHTML = rArr.map(n=>`<span class="${n<=2?'text-green-400':'text-red-400'}">${n}</span>`).join(',') + ' (FS)';
+                document.getElementById(`${side}-sub-rolls`).innerHTML = rArr.join(',') + ' (FS)';
                 return hits;
             };
             const aSH = rollS(aL, 'A', dH); const dSH = rollS(dL, 'D', aH);
@@ -197,7 +168,6 @@
             aL = assignCasualties(aL, aaH + dSH, 'A', true);
             dL = assignCasualties(dL, aSH, 'D', true);
 
-            // Regular Round
             const rollR = (l, side, isA) => {
                 let h = 0; const artB = isA && l.some(u=>u.id==='art');
                 UNIT_DATA.forEach(u => {
@@ -207,8 +177,7 @@
                         const t = isA ? ((u.id==='inf'&&artB)?2:u.attack) : u.defense;
                         const r = Math.floor(Math.random()*6)+1; rArr.push(r); if(r<=t) h++;
                     });
-                    const el = document.getElementById(`${side}-${u.id}-rolls`);
-                    if(el) el.innerHTML = rArr.map(n=>`<span class="${n<=(isA?((u.id==='inf'&&artB)?2:u.attack):u.defense)?'text-green-400':'text-red-400'}">${n}</span>`).join(',');
+                    document.getElementById(`${side}-${u.id}-rolls`).innerHTML = rArr.join(',');
                 });
                 return h;
             };
@@ -225,19 +194,20 @@
                     if (u.id === 'bb') {
                         updateBBMarkers(s);
                         const dmgC = l.filter(x=>x.id==='bb' && x.isDamaged).length;
-                        setTimeout(() => { for(let i=0;i<c;i++){ let cb=document.getElementById(`${s}-bb-dmg-${i}`); if(cb)cb.checked=(i<dmgC); }}, 60);
+                        setTimeout(() => { for(let i=0;i<c;i++){ let cb=document.getElementById(`${s}-bb-dmg-${i}`); if(cb)cb.checked=(i<dmgC); }}, 100);
                     }
                 });
             };
             refresh(fA, 'A'); refresh(fD, 'D');
             
-            // Clear submerge checkboxes for next round
             document.getElementById('A-sub-submerge').checked = false;
             document.getElementById('D-sub-submerge').checked = false;
 
             const m = document.getElementById('messageBox');
             m.className = 'mt-6 p-4 rounded bg-gray-800 border border-blue-500 block';
             m.innerHTML = `Round Complete. Attacker Hits: ${aSH+aHits} | Defender Hits: ${aaH+dSH+dHits}`;
+            
+            // CRITICAL: Pushes the final calculation results to everyone else's screen!
             syncToFirebase();
         }
 
@@ -274,6 +244,8 @@
             UNIT_DATA.forEach(u => { 
                 s[`A-${u.id}`] = document.getElementById(`A-${u.id}`).value; 
                 s[`D-${u.id}`] = document.getElementById(`D-${u.id}`).value; 
+                s[`A-${u.id}-rolls`] = document.getElementById(`A-${u.id}-rolls`).innerHTML;
+                s[`D-${u.id}-rolls`] = document.getElementById(`D-${u.id}-rolls`).innerHTML;
                 if(u.id==='sub') {
                     s[`A-sub-sub`] = document.getElementById('A-sub-submerge').checked;
                     s[`D-sub-sub`] = document.getElementById('D-sub-submerge').checked;
@@ -285,16 +257,25 @@
                     s[`D-bb-dmg`] = Array.from(dBB).map(c => c.checked);
                 }
             });
+            s.msg = document.getElementById('messageBox').innerHTML;
+            s.msgVisible = !document.getElementById('messageBox').classList.contains('hidden');
             db.ref("liveGame").set(s);
         }
 
         db.ref("liveGame").on("value", (snap) => {
-            const d = snap.val(); if(d) {
+            const d = snap.val(); 
+            if(d) {
                 UNIT_DATA.forEach(u => {
                     const aI = document.getElementById(`A-${u.id}`);
                     const dI = document.getElementById(`D-${u.id}`);
                     if(aI && document.activeElement !== aI) aI.value = d[`A-${u.id}`] || 0;
                     if(dI && document.activeElement !== dI) dI.value = d[`D-${u.id}`] || 0;
+                    
+                    document.getElementById(`A-${u.id}-rolls`).innerHTML = d[`A-${u.id}-rolls`] || '';
+                    document.getElementById(`D-${u.id}-rolls`).innerHTML = d[`D-${u.id}-rolls`] || '';
+                    document.getElementById(`A-${u.id}-rem`).textContent = (d[`A-${u.id}`] > 0) ? d[`A-${u.id}`] : '';
+                    document.getElementById(`D-${u.id}-rem`).textContent = (d[`D-${u.id}`] > 0) ? d[`D-${u.id}`] : '';
+
                     if(u.id==='sub') {
                         document.getElementById('A-sub-submerge').checked = d[`A-sub-sub`] || false;
                         document.getElementById('D-sub-submerge').checked = d[`D-sub-sub`] || false;
@@ -306,9 +287,12 @@
                         setTimeout(() => {
                            aDmg.forEach((v, i) => { if(document.getElementById(`A-bb-dmg-${i}`)) document.getElementById(`A-bb-dmg-${i}`).checked = v; });
                            dDmg.forEach((v, i) => { if(document.getElementById(`D-bb-dmg-${i}`)) document.getElementById(`D-bb-dmg-${i}`).checked = v; });
-                        }, 100);
+                        }, 150);
                     }
                 });
+                const m = document.getElementById('messageBox');
+                m.innerHTML = d.msg || '';
+                if(d.msgVisible) m.classList.remove('hidden'); else m.classList.add('hidden');
                 updateAttackDisplay();
             }
         });
