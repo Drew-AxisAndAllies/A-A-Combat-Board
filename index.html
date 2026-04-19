@@ -35,7 +35,7 @@
         </div>
 
         <div class="mt-8 flex flex-col space-y-3">
-            <button id="calculateButton" onclick="calculateCombat()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl transition focus:ring-4 focus:ring-blue-500/50">
+            <button id="calculateButton" onclick="calculateCombat()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl transition">
                 Run Automated Combat Round
             </button>
             <button onclick="clearBattle()" class="w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-xl transition">
@@ -97,8 +97,8 @@
                         <div id="D-${u.id}-rolls" class="text-[10px] text-green-300 text-center mt-1"></div>
                     </td>
                     <td class="col-span-1 p-2 text-center flex flex-col justify-center border-l border-gray-800">
-                        <div id="A-${u.id}-rem" class="text-red-500 font-black"></div>
-                        <div id="D-${u.id}-rem" class="text-green-500 font-black"></div>
+                        <div id="A-${u.id}-rem" class="text-red-500 font-black text-lg"></div>
+                        <div id="D-${u.id}-rem" class="text-green-500 font-black text-lg"></div>
                     </td>
                 </tr>`).join('');
         }
@@ -207,7 +207,7 @@
             m.className = 'mt-6 p-4 rounded bg-gray-800 border border-blue-500 block';
             m.innerHTML = `Round Complete. Attacker Hits: ${aSH+aHits} | Defender Hits: ${aaH+dSH+dHits}`;
             
-            // CRITICAL: Pushes the final calculation results to everyone else's screen!
+            // Push final results
             syncToFirebase();
         }
 
@@ -242,8 +242,10 @@
         function syncToFirebase() {
             const s = {}; 
             UNIT_DATA.forEach(u => { 
-                s[`A-${u.id}`] = document.getElementById(`A-${u.id}`).value; 
-                s[`D-${u.id}`] = document.getElementById(`D-${u.id}`).value; 
+                const aVal = document.getElementById(`A-${u.id}`).value;
+                const dVal = document.getElementById(`D-${u.id}`).value;
+                s[`A-${u.id}`] = aVal; 
+                s[`D-${u.id}`] = dVal; 
                 s[`A-${u.id}-rolls`] = document.getElementById(`A-${u.id}-rolls`).innerHTML;
                 s[`D-${u.id}-rolls`] = document.getElementById(`D-${u.id}-rolls`).innerHTML;
                 if(u.id==='sub') {
@@ -268,13 +270,21 @@
                 UNIT_DATA.forEach(u => {
                     const aI = document.getElementById(`A-${u.id}`);
                     const dI = document.getElementById(`D-${u.id}`);
-                    if(aI && document.activeElement !== aI) aI.value = d[`A-${u.id}`] || 0;
-                    if(dI && document.activeElement !== dI) dI.value = d[`D-${u.id}`] || 0;
+                    const aRem = document.getElementById(`A-${u.id}-rem`);
+                    const dRem = document.getElementById(`D-${u.id}-rem`);
                     
+                    const aCount = d[`A-${u.id}`] || 0;
+                    const dCount = d[`D-${u.id}`] || 0;
+
+                    if(aI && document.activeElement !== aI) aI.value = aCount;
+                    if(dI && document.activeElement !== dI) dI.value = dCount;
+                    
+                    // Force update labels
+                    if(aRem) aRem.textContent = aCount > 0 ? aCount : '';
+                    if(dRem) dRem.textContent = dCount > 0 ? dCount : '';
+
                     document.getElementById(`A-${u.id}-rolls`).innerHTML = d[`A-${u.id}-rolls`] || '';
                     document.getElementById(`D-${u.id}-rolls`).innerHTML = d[`D-${u.id}-rolls`] || '';
-                    document.getElementById(`A-${u.id}-rem`).textContent = (d[`A-${u.id}`] > 0) ? d[`A-${u.id}`] : '';
-                    document.getElementById(`D-${u.id}-rem`).textContent = (d[`D-${u.id}`] > 0) ? d[`D-${u.id}`] : '';
 
                     if(u.id==='sub') {
                         document.getElementById('A-sub-submerge').checked = d[`A-sub-sub`] || false;
